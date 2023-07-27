@@ -9,6 +9,10 @@ module.exports = {
     },
     cloudwatch: {     
     },
+    amplifyBuild: {
+      // text in the sns message or topicname to match on to process this service type
+      match_text: "Build notification from the AWS Amplify Console"
+    },
     codepipeline: {
       // text in the sns message or topicname to match on to process this service type
       match_text: "CodePipelineNotifications"

@@ -134,6 +134,40 @@ var handleCodeDeploy = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
+
+var handleAmplifyBuild = function(event, context) {
+  var record = event.Records[0]
+  var subject = "AWS Amplify Build Notification"
+  var timestamp = new Date(record.Sns.Timestamp).getTime() / 1000;
+  var message = JSON.parse(record.Sns.Message)
+  var color = "warning";
+
+  if (message.includes("FAILED")) {
+      color = "danger";
+  } else if (message.includes("SUCCEEDED")) {
+      color = "good";
+  }
+
+  var description = ""
+  description.replace(/\. /g, ".\n")
+
+  var slackMessage = {
+      text: "*" + subject + "*",
+      attachments: [
+        {
+          "color": color,
+          "fields": [
+            { "title": "Message", "value": record.Sns.Subject, "short": false },
+            { "title": "Description", "value": description, "short": false }
+          ],
+          "ts": timestamp
+        }
+      ]
+  }
+
+return _.merge(slackMessage, baseSlackMessage);
+};
+
 var handleCodePipeline = function(event, context) {
   var subject = "AWS CodePipeline Notification";
   var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
@@ -314,7 +348,7 @@ var handleAutoScaling = function(event, context) {
 var handleCatchAll = function(event, context) {
 
     var record = event.Records[0]
-    var subject = record.Sns.Subject
+    var subject = record.Sns.Subject || "Notification"
     var timestamp = new Date(record.Sns.Timestamp).getTime() / 1000;
     var message = JSON.parse(record.Sns.Message)
     var color = "warning";
@@ -375,7 +409,7 @@ var processEvent = function(event, context) {
     console.log("processing elasticbeanstalk notification");
     slackMessage = handleElasticBeanstalk(event,context)
   }
-  else if(eventSnsMessage && 'AlarmName' in eventSnsMessage && 'AlarmDescription' in eventSnsMessage){
+  else if(eventSnsMessage && typeof eventSnsMessage === "object" && 'AlarmName' in eventSnsMessage && 'AlarmDescription' in eventSnsMessage){
     console.log("processing cloudwatch notification");
     slackMessage = handleCloudWatch(event,context);
   }
@@ -390,6 +424,10 @@ var processEvent = function(event, context) {
   else if(eventSubscriptionArn.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsSubject.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsMessageRaw.indexOf(config.services.autoscaling.match_text) > -1){
     console.log("processing autoscaling notification");
     slackMessage = handleAutoScaling(event, context);
+  }
+  else if(eventSnsSubject || eventSnsMessageRaw.indexOf(config.services.amplifyBuild.match_text) > -1){
+    console.log("processing amplify build notification");
+    slackMessage = handleAmplifyBuild(event,context)
   }
   else{
     slackMessage = handleCatchAll(event, context);
