@@ -141,15 +141,17 @@ var handleAmplifyBuild = function(event, context) {
   var timestamp = new Date(record.Sns.Timestamp).getTime() / 1000;
   var message = JSON.parse(record.Sns.Message)
   var color = "warning";
+  var title = "Build Started!"
 
-  if (message.includes("FAILED")) {
-      color = "danger";
-  } else if (message.includes("SUCCEEDED")) {
-      color = "good";
+  if (message.includes("FAIL")) {
+    title = "Build Error!"
+    color = "danger";
+  } else if (message.includes("SUCCEED")) {
+    title = "Build Complete!"
+    color = "good";
   }
 
-  var description = ""
-  description.replace(/\. /g, ".\n")
+  var description = message.replace(/\. /g, ".\n")
 
   var slackMessage = {
       text: "*" + subject + "*",
@@ -157,7 +159,7 @@ var handleAmplifyBuild = function(event, context) {
         {
           "color": color,
           "fields": [
-            { "title": "Message", "value": record.Sns.Subject, "short": false },
+            { "title": "Message", "value": title, "short": false },
             { "title": "Description", "value": description, "short": false }
           ],
           "ts": timestamp
